@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Simplification;
 
 namespace RefactoringEssentials.CSharp.Diagnostics
 {
@@ -41,6 +42,7 @@ namespace RefactoringEssentials.CSharp.Diagnostics
             if (node == null)
                 return;
             CodeAction action;
+            CodeAction additionalAction = null;
             var floatType = diagnostic.Descriptor.CustomTags.ElementAt(1);
             switch (diagnostic.Descriptor.CustomTags.ElementAt(0))
             {
@@ -70,13 +72,18 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                     break;
                 default:
                     action = AddCompareIssue(document, semanticModel, root, node, floatType);
-
+                    additionalAction = AddUnityCompareIssue(document, semanticModel, root, node, floatType);
                     break;
             }
 
             if (action != null)
             {
                 context.RegisterCodeFix(action, diagnostic);
+            }
+
+            if (additionalAction != null)
+            {
+                context.RegisterCodeFix(additionalAction, diagnostic);
             }
         }
 
@@ -210,6 +217,43 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                 );
                 expr = expr.WithAdditionalAnnotations(Formatter.Annotation);
                 newRoot = root.ReplaceNode((SyntaxNode)node, expr);
+                return Task.FromResult(document.WithSyntaxRoot(newRoot));
+            });
+        }
+
+        static CodeAction AddUnityCompareIssue(Document document, SemanticModel semanticModel, SyntaxNode root, BinaryExpressionSyntax node, string floatType)
+        {
+            if (floatType != "float")
+            {
+                return null;
+            }
+
+            return CodeActionFactory.Create(node.Span, DiagnosticSeverity.Warning, "Fix floating point number comparison for Unity", token =>
+            {
+                var arguments = new SeparatedSyntaxList<ArgumentSyntax>();
+                arguments = arguments.Add(SyntaxFactory.Argument(node.Left));
+                arguments = arguments.Add(SyntaxFactory.Argument(node.Right));
+
+                ExpressionSyntax expr = SyntaxFactory.InvocationExpression(
+                    SyntaxFactory.MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        SyntaxFactory.ParseTypeName("UnityEngine.Mathf").WithAdditionalAnnotations(Simplifier.Annotation),
+                        SyntaxFactory.IdentifierName("Approximately")
+                    ),
+                    SyntaxFactory.ArgumentList(
+                        arguments
+                    )
+                );
+
+                bool isEquals = node.IsKind(SyntaxKind.EqualsExpression);
+
+                if (!isEquals)
+                {
+                    expr = SyntaxFactory.PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, expr);
+                }
+
+                expr = expr.WithAdditionalAnnotations(Formatter.Annotation);
+                var newRoot = root.ReplaceNode(node, expr);
                 return Task.FromResult(document.WithSyntaxRoot(newRoot));
             });
         }

@@ -290,7 +290,7 @@ namespace RefactoringEssentials.Tests
                 diagnostics.Reverse();
                 foreach (var v in diagnostics)
                 {
-                    RunFix(workspace, projectId, documentId, v);
+                    RunFix(workspace, projectId, documentId, v, actionToRun);
                 }
             }
             else

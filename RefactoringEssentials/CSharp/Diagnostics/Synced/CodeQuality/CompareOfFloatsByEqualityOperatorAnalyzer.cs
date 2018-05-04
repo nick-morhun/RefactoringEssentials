@@ -157,8 +157,8 @@ namespace RefactoringEssentials.CSharp.Diagnostics
         {
             var rr2 = semanticModel.GetTypeInfo(left);
             var rr1 = semanticModel.GetTypeInfo(right);
-            if (rr1.Type != null && rr1.Type.SpecialType == SpecialType.System_Single &&
-                rr2.Type != null && rr2.Type.SpecialType == SpecialType.System_Single)
+            if (rr1.ConvertedType != null && rr1.ConvertedType.SpecialType == SpecialType.System_Single &&
+                rr2.ConvertedType != null && rr2.ConvertedType.SpecialType == SpecialType.System_Single)
                 return "float";
             return "double";
         }

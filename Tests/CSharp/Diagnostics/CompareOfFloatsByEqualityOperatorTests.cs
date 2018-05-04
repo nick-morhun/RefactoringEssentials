@@ -28,6 +28,45 @@ class TestClass
 }");
         }
 
+        #region Unity
+
+        static void TestOperatorUnity(string inputOp, string outputOp)
+        {
+            Analyze<CompareOfFloatsByEqualityOperatorAnalyzer>(@"
+class TestClass
+{
+	void TestMethod ()
+	{
+		float x = 0.1f;
+		bool test = $x " + inputOp + @" 0.1f$;
+		bool test2 = $x " + inputOp + @" 1ul$;
+	}
+}", @"
+class TestClass
+{
+	void TestMethod ()
+	{
+		float x = 0.1f;
+		bool test = " + outputOp + @"UnityEngine.Mathf.Approximately(x, 0.1f);
+		bool test2 = " + outputOp + @"UnityEngine.Mathf.Approximately(x, 1ul);
+	}
+}", -1, 1);
+        }
+
+        [Fact]
+        public void TestEqualityUnity()
+        {
+            TestOperatorUnity("==", "");
+        }
+
+        [Fact]
+        public void TestInequalityUnity()
+        {
+            TestOperatorUnity("!=", "!");
+        }
+
+        #endregion
+
         [Fact]
         public void TestEquality()
         {
