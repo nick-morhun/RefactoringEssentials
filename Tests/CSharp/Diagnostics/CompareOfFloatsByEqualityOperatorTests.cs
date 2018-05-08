@@ -30,39 +30,49 @@ class TestClass
 
         #region Unity
 
-        static void TestOperatorUnity(string inputOp, string outputOp)
+        static void TestOperatorUnity(string inputOp, string outputOp, string op1, string op2)
         {
             Analyze<CompareOfFloatsByEqualityOperatorAnalyzer>(@"
 class TestClass
 {
 	void TestMethod ()
 	{
-		float x = 0.1f;
-		bool test = $x " + inputOp + @" 0.1f$;
-		bool test2 = $x " + inputOp + @" 1ul$;
+		float x = " + op1 + @";
+		bool test = $x " + inputOp + @" " + op2 + @"$;
 	}
 }", @"
 class TestClass
 {
 	void TestMethod ()
 	{
-		float x = 0.1f;
-		bool test = " + outputOp + @"UnityEngine.Mathf.Approximately(x, 0.1f);
-		bool test2 = " + outputOp + @"UnityEngine.Mathf.Approximately(x, 1ul);
+		float x = " + op1 + @";
+		bool test = " + outputOp + @"UnityEngine.Mathf.Approximately(x, " + op2 + @");
 	}
 }", -1, 1);
         }
 
         [Fact]
-        public void TestEqualityUnity()
+        public void TestEqualityUnityFloat()
         {
-            TestOperatorUnity("==", "");
+            TestOperatorUnity("==", "", ".1f", ".1f");
         }
 
         [Fact]
-        public void TestInequalityUnity()
+        public void TestEqualityUnityULong()
         {
-            TestOperatorUnity("!=", "!");
+            TestOperatorUnity("==", "", ".1f", "1ul");
+        }
+
+        [Fact]
+        public void TestInequalityUnityFloat()
+        {
+            TestOperatorUnity("!=", "!", ".1f", ".1f");
+        }
+
+        [Fact]
+        public void TestInequalityUnityULong()
+        {
+            TestOperatorUnity("!=", "!", ".1f", "1ul");
         }
 
         #endregion
