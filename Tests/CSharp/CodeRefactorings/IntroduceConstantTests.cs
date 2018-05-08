@@ -1,109 +1,110 @@
-/*
 using RefactoringEssentials.CSharp.CodeRefactorings;
 using Xunit;
 
 namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 {
+    // String numerals won't work!
     public class IntroduceConstantTests : CSharpCodeRefactoringTestBase
     {
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestLocalConstant()
         {
             Test<IntroduceConstantAction>(@"class TestClass
 {
-	public void Hello ()
-	{
-		System.Console.WriteLine ($""Hello World"");
-	}
+    public void Hello ()
+    {
+        System.Console.WriteLine ($'A');
+    }
 }", @"class TestClass
 {
-	public void Hello ()
-	{
-		const string helloWorld = ""Hello World"";
-		System.Console.WriteLine (helloWorld);
-	}
+    public void Hello ()
+    {
+        const char CharConst = 'A';
+        System.Console.WriteLine (CharConst);
+    }
 }");
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestLocalConstantHexNumber()
         {
             Test<IntroduceConstantAction>(@"class TestClass
 {
-	public void Hello ()
-	{
-		System.Console.WriteLine ($0xAFFE);
-	}
+    public void Hello ()
+    {
+        System.Console.WriteLine ($0xAFFE);
+    }
 }", @"class TestClass
 {
-	public void Hello ()
-	{
-		const int i = 0xAFFE;
-		System.Console.WriteLine (i);
-	}
+    public void Hello ()
+    {
+        const int Int32Const = 0xAFFE;
+        System.Console.WriteLine (Int32Const);
+    }
 }");
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestFieldConstant()
         {
             Test<IntroduceConstantAction>(@"class TestClass
 {
-	public void Hello ()
-	{
-		System.Console.WriteLine ($""Hello World"");
-	}
+    public void Hello ()
+    {
+        System.Console.WriteLine ($'A');
+    }
 }", @"class TestClass
 {
-	const string helloWorld = ""Hello World"";
-	public void Hello ()
-	{
-		System.Console.WriteLine (helloWorld);
-	}
+    const char CharConst = 'A';
+
+    public void Hello ()
+    {
+        System.Console.WriteLine (CharConst);
+    }
 }", 1);
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestLocalConstantReplaceAll()
         {
             Test<IntroduceConstantAction>(@"class TestClass
 {
-	public void Hello ()
-	{
-		System.Console.WriteLine ($""Hello World"");
-		System.Console.WriteLine (""Hello World"");
-		System.Console.WriteLine (""Hello World"");
-	}
+    public void Hello ()
+    {
+        System.Console.WriteLine ($'A');
+        System.Console.WriteLine ('A');
+        System.Console.WriteLine ('A');
+    }
 }", @"class TestClass
 {
-	public void Hello ()
-	{
-		const string helloWorld = ""Hello World"";
-		System.Console.WriteLine (helloWorld);
-		System.Console.WriteLine (helloWorld);
-		System.Console.WriteLine (helloWorld);
-	}
+    public void Hello ()
+    {
+        const char CharConst = 'A';
+        System.Console.WriteLine (CharConst);
+        System.Console.WriteLine (CharConst);
+        System.Console.WriteLine (CharConst);
+    }
 }", 2);
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestAlreadyConstant()
         {
             TestWrongContext<IntroduceConstantAction>(@"class TestClass
 {
-	public void Hello ()
-	{
-		const int i = $0xAFFE;
-	}
+    public void Hello ()
+    {
+        const int i = $0xAFFE;
+    }
 }");
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestAlreadyConstantCase2()
         {
             TestWrongContext<IntroduceConstantAction>(@"class TestClass
 {
-	const int i = $0xAFFE;
+    const int i = $0xAFFE;
 }");
         }
 
@@ -112,12 +113,12 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
         {
             Test<IntroduceConstantAction>(@"class TestClass
 {
-	readonly int foo = new Foo ($5);
+    readonly int foo = new Foo ($5);
 }", @"class TestClass
 {
-	const int i = 5;
-	readonly int foo = new Foo (i);
+    const int i = 5;
+    readonly int foo = new Foo (i);
 }");
         }
     }
-}*/
+}
