@@ -66,9 +66,11 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                     break;
                 case "7":
                     action = AddIsZeroIssue(document, semanticModel, root, node, node.Right, floatType);
+                    additionalAction = AddUnityCompareIssue(document, semanticModel, root, node, floatType);
                     break;
                 case "8":
                     action = AddIsZeroIssue(document, semanticModel, root, node, node.Left, floatType);
+                    additionalAction = AddUnityCompareIssue(document, semanticModel, root, node, floatType);
                     break;
                 default:
                     action = AddCompareIssue(document, semanticModel, root, node, floatType);

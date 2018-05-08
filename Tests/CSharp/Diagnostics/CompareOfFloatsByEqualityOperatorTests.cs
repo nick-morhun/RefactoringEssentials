@@ -30,7 +30,7 @@ class TestClass
 
         #region Unity
 
-        static void TestOperatorUnity(string inputOp, string outputOp, string op1, string op2)
+        static void TestOperatorUnity(string inputOp, string outputOp, string op1, string op2, int actionToRun = 1)
         {
             Analyze<CompareOfFloatsByEqualityOperatorAnalyzer>(@"
 class TestClass
@@ -48,7 +48,20 @@ class TestClass
 		float x = " + op1 + @";
 		bool test = " + outputOp + @"UnityEngine.Mathf.Approximately(x, " + op2 + @");
 	}
-}", -1, 1);
+}", -1, actionToRun);
+        }
+
+        static void TestNoAction(string inputOp, string outputOp, string op1, string op2)
+        {
+            Analyze<CompareOfFloatsByEqualityOperatorAnalyzer>(@"
+class TestClass
+{
+	void TestMethod ()
+	{
+		float x = " + op1 + @";
+		bool test = $x " + inputOp + @" " + op2 + @"$;
+	}
+}");
         }
 
         [Fact]
@@ -73,6 +86,30 @@ class TestClass
         public void TestInequalityUnityULong()
         {
             TestOperatorUnity("!=", "!", ".1f", "1ul");
+        }
+
+        [Fact]
+        public void TestEqualityUnityFloatZero()
+        {
+            TestOperatorUnity("==", "", ".1f", "0f");
+        }
+
+        [Fact]
+        public void TestEqualityUnityIntZero()
+        {
+            TestOperatorUnity("==", "", ".1f", "0");
+        }
+
+        [Fact]
+        public void TestEqualityUnityDoubleZero()
+        {
+            TestNoAction("==", "", ".1f", "0d");
+        }
+
+        [Fact]
+        public void TestEqualityUnityDecimalZero()
+        {
+            TestNoAction("==", "", ".1f", "0m");
         }
 
         #endregion
