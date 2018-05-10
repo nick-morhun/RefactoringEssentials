@@ -101,6 +101,12 @@ class TestClass
         }
 
         [Fact]
+        public void TestEqualityUnityUintZero()
+        {
+            TestOperatorUnity("==", "", ".1f", "0u");
+        }
+
+        [Fact]
         public void TestEqualityUnityDoubleZero()
         {
             TestNoAction("==", "", ".1f", "0d");
