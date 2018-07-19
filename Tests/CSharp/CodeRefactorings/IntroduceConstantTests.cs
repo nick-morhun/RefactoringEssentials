@@ -65,6 +65,32 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
         }
 
         [Fact]
+        public void TestFieldConstantReplaceAll()
+        {
+            Test<IntroduceConstantAction>(@"class TestClass
+{
+    public void Hello (char p = 'A')
+    {
+        System.Console.WriteLine ('A');
+        System.Console.WriteLine ($'A');
+    }
+
+    private char c = 'A';
+}", @"class TestClass
+{
+    const char CharConst = 'A';
+
+    public void Hello (char p = CharConst)
+    {
+        System.Console.WriteLine (CharConst);
+        System.Console.WriteLine (CharConst);
+    }
+
+    private char c = CharConst;
+}", 3);
+        }
+
+        [Fact]
         public void TestLocalConstantReplaceAll()
         {
             Test<IntroduceConstantAction>(@"class TestClass

@@ -71,6 +71,13 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                 return;
 
             CreateField(context, document, span, model, root, sourceLiteralExpression, blockSyntax, memberDecl);
+
+            LiteralExpressionSyntax[] inTypeConstants = GetEquivalentLiterals(sourceLiteralExpression, memberDecl.Parent);
+
+            if (inTypeConstants.Length > 1)
+            {
+                CreateFieldReplaceAll(context, document, span, model, root, inTypeConstants);
+            }
         }
 
         private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, StatementSyntax statement)
@@ -161,6 +168,43 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             );
         }
 
+        private static void CreateFieldReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax[] constants)
+        {
+            context.RegisterRefactoring(
+                CodeActionFactory.Create(
+                    span,
+                    DiagnosticSeverity.Info,
+                    string.Format(GettextCatalog.GetString("Create constant field (replace '{0}' occurrences)"),
+                        constants.Length),
+                    t2 =>
+                    {
+                        MemberDeclarationSyntax[] parentMembers = constants.Select(c => c.GetAncestor<MemberDeclarationSyntax>()).ToArray();
+                        TypeInfo constType = model.GetTypeInfo(constants[0]);
+                        string newConstName = CreateName(context, root, parentMembers[0].Parent, constType.ConvertedType.Name);
+
+                        var newConstDecl = SyntaxFactory.FieldDeclaration(SyntaxFactory.List<AttributeListSyntax>(),
+                            CreateConst(),
+                            CreateVariableDecl(constants[0].Token, model, constType, newConstName)
+                        ).WithAdditionalAnnotations(Formatter.Annotation);
+
+                        var trackedRoot = root.TrackNodes(constants.OfType<SyntaxNode>().Concat(parentMembers));
+                        SyntaxNode newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(parentMembers[0]), new[] { newConstDecl });
+
+                        foreach (var sourceConstantLiteral in constants)
+                        {
+                            newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceConstantLiteral), newConstName, newRoot);
+                        }
+
+                        return Task.FromResult(document.WithSyntaxRoot(newRoot));
+                    })
+            );
+        }
+
+        private static LiteralExpressionSyntax[] GetEquivalentLiterals(LiteralExpressionSyntax sourceLiteralExpression, SyntaxNode searchRootSyntax)
+        {
+            return searchRootSyntax.DescendantNodes().Where(node => node.IsEquivalentTo(sourceLiteralExpression)).OfType<LiteralExpressionSyntax>().ToArray();
+        }
+
         private static bool IsConst(SyntaxTokenList modifiers)
         {
             return modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword));
@@ -185,7 +229,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             return SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName(typeName), SyntaxFactory.SingletonSeparatedList(delarator));
         }
 
-        private static string CreateName(CodeRefactoringContext context, SyntaxNode root, BlockSyntax blockSyntax, string typeName)
+        private static string CreateName(CodeRefactoringContext context, SyntaxNode root, SyntaxNode blockSyntax, string typeName)
         {
             string name = typeName + "Const";
             name = NameGenerator.GenerateUniqueName(name, root.ChildTokens().Where(t => t.IsKind(SyntaxKind.IdentifierToken)).Select(t => t.ToString()).ToSet(), StringComparer.Ordinal);
