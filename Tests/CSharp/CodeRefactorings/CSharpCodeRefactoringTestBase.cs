@@ -44,17 +44,15 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 
         internal static List<CodeAction> GetActions<T>(string input) where T : CodeRefactoringProvider, new()
         {
-            DiagnosticTestBase.TestWorkspace workspace;
-            Document doc;
-            return GetActions(new T(), input, out workspace, out doc);
+            return GetActions(new T(), input, out _, out _);
         }
 
-        static List<CodeAction> GetActions(CodeRefactoringProvider action, string input, out CSharpDiagnosticTestBase.TestWorkspace workspace, out Document doc, CSharpParseOptions parseOptions = null)
+        static List<CodeAction> GetActions(CodeRefactoringProvider action, string input, out DiagnosticTestBase.TestWorkspace workspace, out Document doc, CSharpParseOptions parseOptions = null)
         {
             TextSpan selectedSpan;
             TextSpan markedSpan;
             string text = ParseText(input, out selectedSpan, out markedSpan);
-            workspace = new CSharpDiagnosticTestBase.TestWorkspace();
+            workspace = new DiagnosticTestBase.TestWorkspace();
             var projectId = ProjectId.CreateNewId();
             var documentId = DocumentId.CreateNewId(projectId);
             if (parseOptions == null)
@@ -119,9 +117,7 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 
         protected string RunContextAction(CodeRefactoringProvider action, string input, int actionIndex = 0, bool expectErrors = false, CSharpParseOptions parseOptions = null)
         {
-            Document doc;
-            CSharpDiagnosticTestBase.TestWorkspace workspace;
-            var actions = GetActions(action, input, out workspace, out doc, parseOptions);
+            var actions = GetActions(action, input, out var workspace, out var doc, parseOptions);
             Assert.False(actions.Count <= actionIndex);
             var a = actions[actionIndex];
             foreach (var op in a.GetOperationsAsync(default(CancellationToken)).GetAwaiter().GetResult())
@@ -137,9 +133,7 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 
         protected void TestWrongContext(CodeRefactoringProvider action, string input)
         {
-            Document doc;
-            CSharpDiagnosticTestBase.TestWorkspace workspace;
-            var actions = GetActions(action, input, out workspace, out doc);
+            var actions = GetActions(action, input, out _, out _);
             Assert.True(actions == null || actions.Count == 0, action.GetType() + " shouldn't be valid there.");
         }
 
