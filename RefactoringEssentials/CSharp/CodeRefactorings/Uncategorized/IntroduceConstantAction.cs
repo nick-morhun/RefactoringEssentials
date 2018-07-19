@@ -70,7 +70,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             if (memberDecl == null)
                 return;
 
-            CreateField(context, document, span, model, root, sourceLiteralExpression, blockSyntax, memberDecl);
+            CreateField(context, document, span, model, root, sourceLiteralExpression, memberDecl.Parent, memberDecl);
 
             LiteralExpressionSyntax[] inTypeConstants = GetEquivalentLiterals(sourceLiteralExpression, memberDecl.Parent);
 
@@ -143,7 +143,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             );
         }
 
-        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, MemberDeclarationSyntax parentTypeMember)
+        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax constantLiteral, SyntaxNode parentBlock, MemberDeclarationSyntax parentTypeMember)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(

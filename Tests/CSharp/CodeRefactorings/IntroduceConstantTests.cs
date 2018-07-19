@@ -134,7 +134,7 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 }");
         }
 
-        [Fact(Skip="Not implemented!")]
+        [Fact]
         public void TestIntroduceConstantInInitializer()
         {
             Test<IntroduceConstantAction>(@"class TestClass
@@ -142,8 +142,8 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
     readonly int foo = new Foo ($5);
 }", @"class TestClass
 {
-    const int i = 5;
-    readonly int foo = new Foo (i);
+    const int Int32Const = 5;
+    readonly int foo = new Foo (Int32Const);
 }");
         }
     }
