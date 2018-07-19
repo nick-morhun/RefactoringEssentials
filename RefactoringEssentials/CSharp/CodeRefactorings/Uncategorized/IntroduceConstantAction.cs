@@ -55,13 +55,13 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
 
             if (statement != null)
             {
-                CreateLocal(context, document, span, model, root, token, sourceLiteralExpression, blockSyntax, statement);
+                CreateLocal(context, document, span, model, root, sourceLiteralExpression, blockSyntax, statement);
 
                 var sameConstants = blockSyntax.DescendantNodes().Where(node => node.IsEquivalentTo(sourceLiteralExpression)).OfType<LiteralExpressionSyntax>().ToArray();
 
                 if (sameConstants.Length > 1)
                 {
-                    CreateLocalReplaceAll(context, document, span, model, root, token, blockSyntax, sameConstants);
+                    CreateLocalReplaceAll(context, document, span, model, root, blockSyntax, sameConstants);
                 }
             }
 
@@ -70,10 +70,10 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             if (memberDecl == null)
                 return;
 
-            CreateField(context, document, span, model, root, token, sourceLiteralExpression, blockSyntax, memberDecl);
+            CreateField(context, document, span, model, root, sourceLiteralExpression, blockSyntax, memberDecl);
         }
 
-        private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, StatementSyntax statement)
+        private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, StatementSyntax statement)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -87,7 +87,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
 
                         var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
                             CreateConst(),
-                            CreateVariableDecl(token, model, constType, newConstName)
+                            CreateVariableDecl(constantLiteral.Token, model, constType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot = root.TrackNodes(constantLiteral, statement);
@@ -98,7 +98,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             );
         }
 
-        private static void CreateLocalReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken literalToken, BlockSyntax parentBlock, LiteralExpressionSyntax[] constants)
+        private static void CreateLocalReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, BlockSyntax parentBlock, LiteralExpressionSyntax[] constants)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -115,7 +115,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
 
                         var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
                             CreateConst(),
-                            CreateVariableDecl(literalToken, model, constType, newConstName)
+                            CreateVariableDecl(constants[0].Token, model, constType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot =
@@ -136,7 +136,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             );
         }
 
-        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken literalToken, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, MemberDeclarationSyntax parentTypeMember)
+        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, MemberDeclarationSyntax parentTypeMember)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -150,7 +150,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
 
                         var newConstDecl = SyntaxFactory.FieldDeclaration(SyntaxFactory.List<AttributeListSyntax>(),
                             CreateConst(),
-                            CreateVariableDecl(literalToken, model, constType, newConstName)
+                            CreateVariableDecl(constantLiteral.Token, model, constType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot = root.TrackNodes(constantLiteral, parentTypeMember);
