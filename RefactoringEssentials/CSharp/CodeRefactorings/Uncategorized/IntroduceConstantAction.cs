@@ -74,7 +74,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             CreateField(context, document, span, model, root, token, sourceLiteralExpression, blockSyntax, resolveResult, memberDecl);
         }
 
-        private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax sourceLiteralExpression, BlockSyntax blockSyntax, TypeInfo resolveResult, StatementSyntax statement)
+        private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, TypeInfo parentType, StatementSyntax statement)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -83,22 +83,22 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                     GettextCatalog.GetString("Create local constant"),
                     t2 =>
                     {
-                        string newConstName = CreateName(context, root, blockSyntax, resolveResult.ConvertedType.Name);
+                        string newConstName = CreateName(context, root, parentBlock, parentType.ConvertedType.Name);
 
                         var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
                             CreateConst(),
-                            CreateVariableDecl(token, model, resolveResult, newConstName)
+                            CreateVariableDecl(token, model, parentType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
-                        var trackedRoot = root.TrackNodes(sourceLiteralExpression, statement);
+                        var trackedRoot = root.TrackNodes(constantLiteral, statement);
                         var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statement), new[] { newConstDecl });
-                        newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
+                        newRoot = ReplaceWithConst(newRoot.GetCurrentNode(constantLiteral), newConstName, newRoot);
                         return Task.FromResult(document.WithSyntaxRoot(newRoot));
                     })
             );
         }
 
-        private static void CreateLocalReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, BlockSyntax blockSyntax, TypeInfo resolveResult, LiteralExpressionSyntax[] sameConstants)
+        private static void CreateLocalReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken literalToken, BlockSyntax parentBlock, TypeInfo parentType, LiteralExpressionSyntax[] sameConstants)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -110,12 +110,12 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                     {
                         var statements = sameConstants.Select(c => c.GetAncestor<StatementSyntax>()).ToArray();
 
-                        string newConstName = CreateName(context, root, blockSyntax,
-                            resolveResult.ConvertedType.Name);
+                        string newConstName = CreateName(context, root, parentBlock,
+                            parentType.ConvertedType.Name);
 
                         var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
                             CreateConst(),
-                            CreateVariableDecl(token, model, resolveResult, newConstName)
+                            CreateVariableDecl(literalToken, model, parentType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot =
@@ -136,7 +136,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             );
         }
 
-        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax sourceLiteralExpression, BlockSyntax blockSyntax, TypeInfo resolveResult, MemberDeclarationSyntax memberDecl)
+        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken literalToken, LiteralExpressionSyntax constantLiteral, BlockSyntax parentBlock, TypeInfo parentType, MemberDeclarationSyntax parentTypeMember)
         {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
@@ -145,16 +145,16 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                     GettextCatalog.GetString("Create constant field"),
                     t2 =>
                     {
-                        string newConstName = CreateName(context, root, blockSyntax, resolveResult.ConvertedType.Name);
+                        string newConstName = CreateName(context, root, parentBlock, parentType.ConvertedType.Name);
 
                         var newConstDecl = SyntaxFactory.FieldDeclaration(SyntaxFactory.List<AttributeListSyntax>(),
                             CreateConst(),
-                            CreateVariableDecl(token, model, resolveResult, newConstName)
+                            CreateVariableDecl(literalToken, model, parentType, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
-                        var trackedRoot = root.TrackNodes(sourceLiteralExpression, memberDecl);
-                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(memberDecl), new[] { newConstDecl });
-                        newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
+                        var trackedRoot = root.TrackNodes(constantLiteral, parentTypeMember);
+                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(parentTypeMember), new[] { newConstDecl });
+                        newRoot = ReplaceWithConst(newRoot.GetCurrentNode(constantLiteral), newConstName, newRoot);
                         return Task.FromResult(document.WithSyntaxRoot(newRoot));
                     })
             );
