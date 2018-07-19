@@ -122,8 +122,7 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
             Document doc;
             CSharpDiagnosticTestBase.TestWorkspace workspace;
             var actions = GetActions(action, input, out workspace, out doc, parseOptions);
-            if (actions.Count < actionIndex)
-                Console.WriteLine("invalid input is:" + input);
+            Assert.False(actions.Count <= actionIndex);
             var a = actions[actionIndex];
             foreach (var op in a.GetOperationsAsync(default(CancellationToken)).GetAwaiter().GetResult())
             {
