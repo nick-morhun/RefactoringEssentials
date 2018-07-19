@@ -6,6 +6,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
 using Microsoft.CodeAnalysis.Formatting;
+using Microsoft.CodeAnalysis.Text;
 
 namespace RefactoringEssentials.CSharp.CodeRefactorings
 {
@@ -55,65 +56,13 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
 
             if (statement != null)
             {
-                context.RegisterRefactoring(
-                    CodeActionFactory.Create(
-                        span,
-                        DiagnosticSeverity.Info,
-                        GettextCatalog.GetString("Create local constant"),
-                        t2 =>
-                        {
-                            string newConstName = CreateName(context, root, blockSyntax, resolveResult.ConvertedType.Name);
-
-                            var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
-                                CreateConst(),
-                                CreateVariableDecl(token, model, resolveResult, newConstName)
-                            ).WithAdditionalAnnotations(Formatter.Annotation);
-
-                            var trackedRoot = root.TrackNodes(sourceLiteralExpression, statement);
-                            var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statement), new[] { newConstDecl });
-                            newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
-                            return Task.FromResult(document.WithSyntaxRoot(newRoot));
-                        })
-                );
+                CreateLocal(context, document, span, model, root, token, sourceLiteralExpression, blockSyntax, resolveResult, statement);
 
                 var sameConstants = blockSyntax.DescendantNodes().Where(node => node.IsEquivalentTo(sourceLiteralExpression)).OfType<LiteralExpressionSyntax>().ToArray();
 
                 if (sameConstants.Length > 1)
                 {
-                    context.RegisterRefactoring(
-                        CodeActionFactory.Create(
-                            span,
-                            DiagnosticSeverity.Info,
-                            string.Format(GettextCatalog.GetString("Create local constant (replace '{0}' occurrences)"),
-                                sameConstants.Length),
-                            t2 =>
-                            {
-                                var statements = sameConstants.Select(c => c.GetAncestor<StatementSyntax>()).ToArray();
-
-                                string newConstName = CreateName(context, root, blockSyntax,
-                                    resolveResult.ConvertedType.Name);
-
-                                var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
-                                    CreateConst(),
-                                    CreateVariableDecl(token, model, resolveResult, newConstName)
-                                ).WithAdditionalAnnotations(Formatter.Annotation);
-
-                                var trackedRoot =
-                                    root.TrackNodes(sameConstants.OfType<SyntaxNode>().Concat(statements));
-                                var newRoot =
-                                    trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statements.First()),
-                                        new[] {newConstDecl});
-
-                                foreach (var sourceConstantLiteral in sameConstants)
-                                {
-                                    newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceConstantLiteral),
-                                        newConstName,
-                                        newRoot);
-                                }
-
-                                return Task.FromResult(document.WithSyntaxRoot(newRoot));
-                            })
-                    );
+                    CreateLocalReplaceAll(context, document, span, model, root, token, blockSyntax, resolveResult, sameConstants);
                 }
             }
 
@@ -122,6 +71,73 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
             if (memberDecl == null)
                 return;
 
+            CreateField(context, document, span, model, root, token, sourceLiteralExpression, blockSyntax, resolveResult, memberDecl);
+        }
+
+        private static void CreateLocal(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax sourceLiteralExpression, BlockSyntax blockSyntax, TypeInfo resolveResult, StatementSyntax statement)
+        {
+            context.RegisterRefactoring(
+                CodeActionFactory.Create(
+                    span,
+                    DiagnosticSeverity.Info,
+                    GettextCatalog.GetString("Create local constant"),
+                    t2 =>
+                    {
+                        string newConstName = CreateName(context, root, blockSyntax, resolveResult.ConvertedType.Name);
+
+                        var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
+                            CreateConst(),
+                            CreateVariableDecl(token, model, resolveResult, newConstName)
+                        ).WithAdditionalAnnotations(Formatter.Annotation);
+
+                        var trackedRoot = root.TrackNodes(sourceLiteralExpression, statement);
+                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statement), new[] { newConstDecl });
+                        newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
+                        return Task.FromResult(document.WithSyntaxRoot(newRoot));
+                    })
+            );
+        }
+
+        private static void CreateLocalReplaceAll(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, BlockSyntax blockSyntax, TypeInfo resolveResult, LiteralExpressionSyntax[] sameConstants)
+        {
+            context.RegisterRefactoring(
+                CodeActionFactory.Create(
+                    span,
+                    DiagnosticSeverity.Info,
+                    string.Format(GettextCatalog.GetString("Create local constant (replace '{0}' occurrences)"),
+                        sameConstants.Length),
+                    t2 =>
+                    {
+                        var statements = sameConstants.Select(c => c.GetAncestor<StatementSyntax>()).ToArray();
+
+                        string newConstName = CreateName(context, root, blockSyntax,
+                            resolveResult.ConvertedType.Name);
+
+                        var newConstDecl = SyntaxFactory.LocalDeclarationStatement(
+                            CreateConst(),
+                            CreateVariableDecl(token, model, resolveResult, newConstName)
+                        ).WithAdditionalAnnotations(Formatter.Annotation);
+
+                        var trackedRoot =
+                            root.TrackNodes(sameConstants.OfType<SyntaxNode>().Concat(statements));
+                        var newRoot =
+                            trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statements.First()),
+                                new[] { newConstDecl });
+
+                        foreach (var sourceConstantLiteral in sameConstants)
+                        {
+                            newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceConstantLiteral),
+                                newConstName,
+                                newRoot);
+                        }
+
+                        return Task.FromResult(document.WithSyntaxRoot(newRoot));
+                    })
+            );
+        }
+
+        private static void CreateField(CodeRefactoringContext context, Document document, TextSpan span, SemanticModel model, SyntaxNode root, SyntaxToken token, LiteralExpressionSyntax sourceLiteralExpression, BlockSyntax blockSyntax, TypeInfo resolveResult, MemberDeclarationSyntax memberDecl)
+        {
             context.RegisterRefactoring(
                 CodeActionFactory.Create(
                     span,
@@ -136,12 +152,12 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                             CreateVariableDecl(token, model, resolveResult, newConstName)
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
-                        var trackedRoot = root.TrackNodes(new SyntaxNode[] { sourceLiteralExpression, memberDecl });
+                        var trackedRoot = root.TrackNodes(sourceLiteralExpression, memberDecl);
                         var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(memberDecl), new[] { newConstDecl });
                         newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
                         return Task.FromResult(document.WithSyntaxRoot(newRoot));
                     })
-               );
+            );
         }
 
         private static bool IsConst(SyntaxTokenList modifiers)
