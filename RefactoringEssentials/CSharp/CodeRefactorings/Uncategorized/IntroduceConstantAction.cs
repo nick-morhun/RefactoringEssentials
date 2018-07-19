@@ -69,17 +69,7 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                                 CreateVariableDecl(token, model, resolveResult, newConstName)
                             ).WithAdditionalAnnotations(Formatter.Annotation);
 
-                            //newConstDecl = Formatter.Format(newConstDecl, document.Project.Solution.Workspace) as LocalDeclarationStatementSyntax;
-                            //newConstDecl = newConstDecl.WithLeadingTrivia(statement.GetLeadingTrivia()).WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed);
-
-                            //var newRoot = root.InsertNodesBefore(statement, new[] { newConstDecl });
-                            //var sameExpressionNode = newRoot.DescendantNodes()
-                            //         .FirstOrDefault(n => n.IsEquivalentTo(expression));
-                            //var sameExpression = sameExpressionNode as LiteralExpressionSyntax;
-
-                            //string nl = document.Project.Solution.Workspace.Options.GetOption(SymbolDisplayFormat.MinimallyQualifiedFormat.UseSpecialTypes, LanguageNames.CSharp);
-
-                            var trackedRoot = root.TrackNodes(new SyntaxNode[] { sourceLiteralExpression, statement });
+                            var trackedRoot = root.TrackNodes(sourceLiteralExpression, statement);
                             var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(statement), new[] { newConstDecl });
                             newRoot = ReplaceWithConst(newRoot.GetCurrentNode(sourceLiteralExpression), newConstName, newRoot);
                             return Task.FromResult(document.WithSyntaxRoot(newRoot));
