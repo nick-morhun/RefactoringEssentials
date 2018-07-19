@@ -71,8 +71,8 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
 {
     public void Hello ()
     {
-        System.Console.WriteLine ($'A');
         System.Console.WriteLine ('A');
+        System.Console.WriteLine ($'A');
         System.Console.WriteLine ('A');
     }
 }", @"class TestClass
@@ -84,7 +84,7 @@ namespace RefactoringEssentials.Tests.CSharp.CodeRefactorings
         System.Console.WriteLine (CharConst);
         System.Console.WriteLine (CharConst);
     }
-}", 2);
+}", 1);
         }
 
         [Fact]
