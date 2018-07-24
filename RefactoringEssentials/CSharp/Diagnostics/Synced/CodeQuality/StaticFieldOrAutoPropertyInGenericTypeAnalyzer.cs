@@ -39,7 +39,6 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                             return;
                         var semanticModel = compilation.GetSemanticModel(ctx.Tree);
                         var root = ctx.Tree.GetRoot(ctx.CancellationToken);
-                        var model = compilationContext.Compilation.GetSemanticModel(ctx.Tree);
                         new GatherVisitor(ctx, semanticModel).Visit(root);
                     }
                     catch (OperationCanceledException) { }
