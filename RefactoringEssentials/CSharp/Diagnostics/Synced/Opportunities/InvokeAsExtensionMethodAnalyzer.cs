@@ -40,13 +40,12 @@ namespace RefactoringEssentials.CSharp.Diagnostics
 
         static bool TryGetDiagnostic(SyntaxNodeAnalysisContext nodeContext, out Diagnostic diagnostic)
         {
-            var node = nodeContext.Node as InvocationExpressionSyntax;
+            var node = (InvocationExpressionSyntax)nodeContext.Node;
             var semanticModel = nodeContext.SemanticModel;
             var cancellationToken = nodeContext.CancellationToken;
 
             diagnostic = default(Diagnostic);
-            var memberReference = node.Expression as MemberAccessExpressionSyntax;
-            if (memberReference == null)
+            if (!(node.Expression is MemberAccessExpressionSyntax memberReference))
                 return false;
             var firstArgument = node.ArgumentList?.Arguments.FirstOrDefault()?.Expression;
             if (firstArgument == null|| firstArgument.IsKind(SyntaxKind.NullLiteralExpression))
