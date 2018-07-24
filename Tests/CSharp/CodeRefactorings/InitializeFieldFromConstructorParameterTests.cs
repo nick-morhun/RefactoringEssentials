@@ -25,6 +25,26 @@ class Foo
     }
 }");
         }
+
+        [Fact]
+        public void TestExpressionBody()
+        {
+            Test<InitializeFieldFromConstructorParameterCodeRefactoringProvider>(@"
+class Foo
+{
+    public Foo(int $x, int y) => new Object();
+}", @"
+class Foo
+{
+    readonly int x;
+
+    public Foo(int x, int y)
+    {
+        this.x = x;
+        new Object();
+    }
+}");
+        }
     }
 }
 

@@ -64,12 +64,26 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot = root.TrackNodes(ctor);
-                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor), new [] {newField});
-                        newRoot = newRoot.ReplaceNode(newRoot.GetCurrentNode(ctor), ctor.WithBody(
-                            ctor.Body.WithStatements(
-                                SyntaxFactory.List(
-                                    new[] {assignmentStatement}.Concat(ctor.Body.Statements)))
-                        ));
+                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor), new [] { newField });
+
+                        IEnumerable<StatementSyntax> statements = new[] { assignmentStatement };
+
+                        if (ctor.Body != null)
+                            statements = statements.Concat(ctor.Body.Statements);
+                        else if (ctor.ExpressionBody != null)
+                        {
+                            var expressionStatement = SyntaxFactory.ExpressionStatement(ctor.ExpressionBody.Expression, SyntaxFactory.Token(SyntaxKind.SemicolonToken));
+                            statements = statements.Concat(new[] { expressionStatement });
+                        }
+
+                        var ctorBody = SyntaxFactory.Block(statements);//.WithLeadingTrivia(ctor.GetLeadingTrivia());
+                        ConstructorDeclarationSyntax newCtor = ctor.WithBody(ctorBody)
+                            .WithExpressionBody(null)
+                            .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.None))
+                            .WithAdditionalAnnotations(Formatter.Annotation)
+                            .WithTrailingTrivia(ctor.GetTrailingTrivia());
+
+                        newRoot = newRoot.ReplaceNode(newRoot.GetCurrentNode(ctor), newCtor);
 
                         return Task.FromResult(document.WithSyntaxRoot(newRoot));
                     })
