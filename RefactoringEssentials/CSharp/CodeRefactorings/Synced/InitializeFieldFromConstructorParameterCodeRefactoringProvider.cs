@@ -28,49 +28,56 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                 return;
             var root = await model.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             var token = root.FindToken(span.Start);
-            var parameter = token.Parent as ParameterSyntax;
 
-            if (parameter != null)
-            {
-                var ctor = parameter.Parent.Parent as ConstructorDeclarationSyntax;
-                if (ctor == null)
-                    return;
-                
-                context.RegisterRefactoring(
-                    CodeActionFactory.Create(
-                        parameter.Span,
-                        DiagnosticSeverity.Info,
-                        GettextCatalog.GetString("Initialize field from parameter"),
-                        t2 =>
-                        {
-                    var newFieldName = NameProposalService.GetNameProposal(parameter.Identifier.ValueText, SyntaxKind.FieldDeclaration, Accessibility.Private, false, context.Document, ctor.SpanStart);
-                            var newField = SyntaxFactory.FieldDeclaration(
+            if (!(token.Parent is ParameterSyntax parameter))
+                return;
+
+            if (!(parameter.Parent.Parent is ConstructorDeclarationSyntax ctor))
+                return;
+
+            context.RegisterRefactoring(
+                CodeActionFactory.Create(
+                    parameter.Span,
+                    DiagnosticSeverity.Info,
+                    GettextCatalog.GetString("Initialize field from parameter"),
+                    t2 =>
+                    {
+                        var newFieldName = NameProposalService.GetNameProposal(parameter.Identifier.ValueText,
+                            SyntaxKind.FieldDeclaration, Accessibility.Private, false, context.Document,
+                            ctor.SpanStart);
+                        var newField = SyntaxFactory.FieldDeclaration(
                                 SyntaxFactory.VariableDeclaration(
                                     parameter.Type,
-                                    SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(SyntaxFactory.VariableDeclarator(newFieldName)))
-                            ).WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword)))
+                                    SyntaxFactory.SingletonSeparatedList<VariableDeclaratorSyntax>(
+                                        SyntaxFactory.VariableDeclarator(newFieldName)))
+                            ).WithModifiers(
+                                SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword)))
                             .WithAdditionalAnnotations(Formatter.Annotation);
 
-                            var assignmentStatement = SyntaxFactory.ExpressionStatement(
-                                SyntaxFactory.AssignmentExpression(
-                                    SyntaxKind.SimpleAssignmentExpression,
-                                    SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, SyntaxFactory.ThisExpression(), SyntaxFactory.IdentifierName(newFieldName)),
-                            SyntaxFactory.IdentifierName(parameter.Identifier)
-                                )
-                            ).WithAdditionalAnnotations(Formatter.Annotation);
+                        var assignmentStatement = SyntaxFactory.ExpressionStatement(
+                            SyntaxFactory.AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    SyntaxFactory.ThisExpression(), SyntaxFactory.IdentifierName(newFieldName)),
+                                SyntaxFactory.IdentifierName(parameter.Identifier)
+                            )
+                        ).WithAdditionalAnnotations(Formatter.Annotation);
 
-                            var trackedRoot = root.TrackNodes(ctor);
-                            var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor), new List<SyntaxNode>() {
+                        var trackedRoot = root.TrackNodes(ctor);
+                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor),
+                            new List<SyntaxNode>()
+                            {
                                 newField
                             });
-                            newRoot = newRoot.ReplaceNode(newRoot.GetCurrentNode(ctor), ctor.WithBody(
-                                ctor.Body.WithStatements(SyntaxFactory.List<StatementSyntax>(new[] { assignmentStatement }.Concat(ctor.Body.Statements)))
-                            ));
+                        newRoot = newRoot.ReplaceNode(newRoot.GetCurrentNode(ctor), ctor.WithBody(
+                            ctor.Body.WithStatements(
+                                SyntaxFactory.List<StatementSyntax>(
+                                    new[] {assignmentStatement}.Concat(ctor.Body.Statements)))
+                        ));
 
-                            return Task.FromResult(document.WithSyntaxRoot(newRoot));
-                        })
-                );
-            }
+                        return Task.FromResult(document.WithSyntaxRoot(newRoot));
+                    })
+            );
         }
     }
 }
