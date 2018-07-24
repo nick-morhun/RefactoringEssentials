@@ -64,14 +64,10 @@ namespace RefactoringEssentials.CSharp.CodeRefactorings
                         ).WithAdditionalAnnotations(Formatter.Annotation);
 
                         var trackedRoot = root.TrackNodes(ctor);
-                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor),
-                            new List<SyntaxNode>()
-                            {
-                                newField
-                            });
+                        var newRoot = trackedRoot.InsertNodesBefore(trackedRoot.GetCurrentNode(ctor), new [] {newField});
                         newRoot = newRoot.ReplaceNode(newRoot.GetCurrentNode(ctor), ctor.WithBody(
                             ctor.Body.WithStatements(
-                                SyntaxFactory.List<StatementSyntax>(
+                                SyntaxFactory.List(
                                     new[] {assignmentStatement}.Concat(ctor.Body.Statements)))
                         ));
 
