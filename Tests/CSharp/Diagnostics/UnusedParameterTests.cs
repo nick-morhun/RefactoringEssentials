@@ -282,5 +282,27 @@ class TestClass {
 }";
             Analyze<UnusedParameterAnalyzer>(input);
         }
+
+        [Fact]
+        public void TestUnusedParameterInExpressionBodiedConstructor()
+        {
+            var input = @"
+class TestClass {
+    public TestClass(int $i$) => new Object();
+}";
+            Analyze<UnusedParameterAnalyzer>(input);
+        }
+
+        [Fact]
+        public void TestUsedParameterInExpressionBodiedConstructor()
+        {
+            var input = @"
+class TestClass {
+    int field;
+
+    public TestClass(int i) => field = i;
+}";
+            Analyze<UnusedParameterAnalyzer>(input);
+        }
     }
 }
