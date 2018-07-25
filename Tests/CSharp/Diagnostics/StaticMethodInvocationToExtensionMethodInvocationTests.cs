@@ -246,6 +246,86 @@ class Program
         }
 
         [Fact]
+        public void IgnoresIfCalledMethodWouldChange()
+        {
+            Analyze<InvokeAsExtensionMethodAnalyzer>(@"
+class A
+{
+    public void Ext (int i)
+    {
+        B.Ext(this, i)
+    }
+}
+static class B
+{
+    public static void Ext (this A a, int i) {}
+}
+");
+        }
+
+        [Fact]
+        public void IgnoresIfCalledMethodWouldChange1()
+        {
+            Analyze<InvokeAsExtensionMethodAnalyzer>(@"
+class A
+{
+    public void Ext (int i)
+    {
+    }
+}
+static class B
+{
+    public static void Ext (this A a, int i) {}
+}
+class C
+{
+	void F()
+	{
+		A a = new A();
+		B.Ext(a, 1);
+	}
+}");
+        }
+
+        [Fact]
+        public void IgnoresIfCalledMethodWouldChange2()
+        {
+            Analyze<InvokeAsExtensionMethodAnalyzer>(@"
+class A { }
+static class B
+{
+    public static void Ext (this A a, int i) {}
+}
+static class C
+{
+	public static void Ext (this A a, int i)
+	{
+		B.Ext(a, 1);
+	}
+}");
+        }
+
+        [Fact]
+        public void IgnoresIfCalledMethodWouldChange3()
+        {
+            Analyze<InvokeAsExtensionMethodAnalyzer>(@"
+class A { }
+static class B
+{
+    public static void Ext (this A a, int i) {}
+}
+static class C
+{
+	public static void Ext1 (this A a, int i)
+	{
+		B.Ext(a, 1);
+	}
+
+	public static void Ext (this A a, int i) {}
+}");
+        }
+
+        [Fact]
         public void HandlesDelegateExtensionMethodOnVariable()
         {
             Analyze<InvokeAsExtensionMethodAnalyzer>(@"

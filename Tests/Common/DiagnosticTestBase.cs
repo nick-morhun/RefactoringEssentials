@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using System.Threading;
 using Microsoft.CodeAnalysis.CodeFixes;
@@ -30,6 +31,7 @@ namespace RefactoringEssentials.Tests
         {
             try
             {
+                var sci = MetadataReference.CreateFromFile(typeof(ImmutableArray).Assembly.Location);
                 mscorlib = MetadataReference.CreateFromFile(typeof(Console).Assembly.Location);
                 systemAssembly = MetadataReference.CreateFromFile(typeof(System.ComponentModel.BrowsableAttribute).Assembly.Location);
                 systemXmlLinq = MetadataReference.CreateFromFile(typeof(System.Xml.Linq.XElement).Assembly.Location);

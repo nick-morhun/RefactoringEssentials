@@ -34,6 +34,12 @@ namespace RefactoringEssentials.CSharp.Diagnostics
             var node = root.FindNode(context.Span).Parent.Parent as InvocationExpressionSyntax;
             if (node == null)
                 return;
+            SyntaxNode newRoot = ApplyFix(root, node);
+            context.RegisterCodeFix(CodeActionFactory.Create(node.Span, diagnostic.Severity, "Convert to extension method call", document.WithSyntaxRoot(newRoot)), diagnostic);
+        }
+
+        public static SyntaxNode ApplyFix(SyntaxNode root, InvocationExpressionSyntax node)
+        {
             var invocationTarget = ((MemberAccessExpressionSyntax)node.Expression)
                 .WithExpression(CSharpUtil.AddParensIfRequired(node.ArgumentList.Arguments.First().Expression));
             var newNode = node
@@ -41,7 +47,7 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                 .WithExpression(invocationTarget)
                 .WithLeadingTrivia(node.GetLeadingTrivia());
             var newRoot = root.ReplaceNode(node, newNode);
-            context.RegisterCodeFix(CodeActionFactory.Create(node.Span, diagnostic.Severity, "Convert to extension method call", document.WithSyntaxRoot(newRoot)), diagnostic);
+            return newRoot;
         }
     }
 }

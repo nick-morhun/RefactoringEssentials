@@ -1,8 +1,11 @@
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.FindSymbols;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace RefactoringEssentials.CSharp.Diagnostics
 {
@@ -66,6 +69,30 @@ namespace RefactoringEssentials.CSharp.Diagnostics
             {
                 if (!firstArgumentType.Equals(expressionSymbol.Parameters[0].Type))
                     return false;
+
+                var root = nodeContext.Node.GetAncestor<TypeDeclarationSyntax>();//nodeContext.Node.SyntaxTree.GetRoot(cancellationToken);
+                var trackedRoot = root.TrackNodes(node);
+                var testRoot = InvokeAsExtensionMethodCodeFixProvider.ApplyFix(trackedRoot, trackedRoot.GetCurrentNode(node));
+
+                var newNode = testRoot.GetCurrentNode(node);
+                var testCompilation = nodeContext.Compilation.ReplaceSyntaxTree(root.SyntaxTree, testRoot.SyntaxTree);
+                var testSemModel = testCompilation.GetSemanticModel(testRoot.SyntaxTree);
+                var testExpressionSymbol = semanticModel.GetSymbolInfo(newNode.Expression).Symbol as IMethodSymbol;
+
+                //SemanticModel speculative;
+                //if (semanticModel.TryGetSpeculativeSemanticModel(node.SpanStart, testRoot, out speculative))
+                //{
+                //    var newNode = testRoot.GetCurrentNode(node);
+                //    System.Console.WriteLine(newNode);
+                //}
+
+                if (firstArgumentType is INamedTypeSymbol firstArgumentNamedType)
+                {
+                    if (firstArgumentNamedType.GetMembers().OfType<IMethodSymbol>().Any(ms => !ms.IsStatic && Match(ms, expressionSymbol)))
+                    {
+                       
+                    }
+                }
             }
 
             // Don't allow conversion if first parameter is a method name instead of variable (extension method on delegate type)
@@ -81,6 +108,11 @@ namespace RefactoringEssentials.CSharp.Diagnostics
                 memberReference.Name.GetLocation()
             );
             return true;
+        }
+
+        private static bool Match(IMethodSymbol candidate, IMethodSymbol target)
+        {
+            return candidate.Name == target.Name && candidate.IsVararg && target.IsVararg;
         }
     }
 }
